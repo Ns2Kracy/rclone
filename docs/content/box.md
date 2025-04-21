@@ -37,7 +37,7 @@ XX / Box
 [snip]
 Storage> box
 Box App Client Id - leave blank normally.
-client_id> 
+client_id>
 Box App Client Secret - leave blank normally.
 client_secret>
 Box App config.json location
@@ -87,7 +87,7 @@ machine with no Internet browser available.
 Note that rclone runs a webserver on your local machine to collect the
 token as returned from Box. This only runs from the moment it opens
 your browser to the moment you get back the verification code.  This
-is on `http://127.0.0.1:53682/` and this it may require you to unblock
+is on `http://127.0.0.1:53682/` and this may require you to unblock
 it temporarily if you are running a host firewall.
 
 Once configured you can then use `rclone` like this,
@@ -242,8 +242,8 @@ either be actually deleted from Box or moved to the trash.
 
 Emptying the trash is supported via the rclone however cleanup command
 however this deletes every trashed file and folder individually so it
-may take a very long time. 
-Emptying the trash via the  WebUI does not have this limitation 
+may take a very long time.
+Emptying the trash via the  WebUI does not have this limitation
 so it is advised to empty the trash via the WebUI.
 
 ### Root folder ID

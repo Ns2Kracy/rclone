@@ -5,6 +5,32 @@ description: "Rclone Changelog"
 
 # Changelog
 
+## v1.69.1 - 2025-02-14
+
+[See commits](https://github.com/rclone/rclone/compare/v1.69.0...v1.69.1)
+
+* Bug Fixes
+    * lib/oauthutil: Fix redirect URL mismatch errors (Nick Craig-Wood)
+    * bisync: Fix listings missing concurrent modifications (nielash)
+    * serve s3: Fix list objects encoding-type (Nick Craig-Wood)
+    * fs: Fix confusing "didn't find section in config file" error (Nick Craig-Wood)
+    * doc fixes (Christoph Berger, Dimitri Papadopoulos, Matt Ickstadt, Nick Craig-Wood, Tim White, Zachary Vorhies)
+    * build: Added parallel docker builds and caching for go build in the container (Anagh Kumar Baranwal)
+* VFS
+    * Fix the cache failing to upload symlinks when `--links` was specified (Nick Craig-Wood)
+    * Fix race detected by race detector (Nick Craig-Wood)
+    * Close the change notify channel on Shutdown (izouxv)
+* B2
+    * Fix "fatal error: concurrent map writes" (Nick Craig-Wood)
+* Iclouddrive
+    * Add notes on ADP and Missing PCS cookies (Nick Craig-Wood)
+* Onedrive
+    * Mark German (de) region as deprecated (Nick Craig-Wood)
+* S3
+    * Added new storage class to magalu provider (Bruno Fernandes)
+    * Add DigitalOcean regions SFO2, LON1, TOR1, BLR1 (jkpe)
+    * Add latest Linode Object Storage endpoints (jbagwell-akamai)
+
 ## v1.69.0 - 2025-01-12
 
 [See commits](https://github.com/rclone/rclone/compare/v1.68.0...v1.69.0)
@@ -34,7 +60,7 @@ description: "Rclone Changelog"
     * fs: Make `--links` flag global and add new `--local-links` and `--vfs-links` flags (Nick Craig-Wood)
     * http servers: Disable automatic authentication skipping for unix sockets in http servers (Moises Lima)
         * This was making it impossible to use unix sockets with an proxy
-        * This might now cause rclone to need authenticaton where it didn't before
+        * This might now cause rclone to need authentication where it didn't before
     * oauthutil: add support for OAuth client credential flow (Martin Hassack, Nick Craig-Wood)
     * operations: make log messages consistent for mkdir/rmdir at INFO level (Nick Craig-Wood)
     * rc: Add `relative` to [vfs/queue-set-expiry](/rc/#vfs-queue-set-expiry) (Nick Craig-Wood)
@@ -712,7 +738,7 @@ instead of of `--size-only`, when `check` is not available.
         * Update all dependencies (Nick Craig-Wood)
         * Refactor version info and icon resource handling on windows (albertony)
     * doc updates (albertony, alfish2000, asdffdsazqqq, Dimitri Papadopoulos, Herby Gillot, Joda Stößer, Manoj Ghosh, Nick Craig-Wood)
-    * Implement `--metadata-mapper` to transform metatadata with a user supplied program (Nick Craig-Wood)
+    * Implement `--metadata-mapper` to transform metadata with a user supplied program (Nick Craig-Wood)
     * Add `ChunkWriterDoesntSeek` feature flag and set it for b2 (Nick Craig-Wood)
     * lib/http: Export basic go string functions for use in `--template` (Gabriel Espinoza)
     * makefile: Use POSIX compatible install arguments (Mina Galić)
@@ -827,7 +853,7 @@ instead of of `--size-only`, when `check` is not available.
     * Fix "fatal error: concurrent map writes" (Nick Craig-Wood)
 * B2
     * Fix multipart upload: corrupted on transfer: sizes differ XXX vs 0 (Nick Craig-Wood)
-    * Fix locking window when getting mutipart upload URL (Nick Craig-Wood)
+    * Fix locking window when getting multipart upload URL (Nick Craig-Wood)
     * Fix server side copies greater than 4GB (Nick Craig-Wood)
     * Fix chunked streaming uploads (Nick Craig-Wood)
     * Reduce default `--b2-upload-concurrency` to 4 to reduce memory usage (Nick Craig-Wood)
