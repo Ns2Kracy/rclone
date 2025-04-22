@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -262,7 +261,7 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 	// Set up token renewal if using OAuth2
 	if ts != nil {
 		f.tokenRenewer = oauthutil.NewRenew(f.String(), ts, func() error {
-			_, err = f.UserInfo(ctx)
+			_, err = f.GetUserInfo(ctx)
 			return err
 		})
 	}
@@ -307,37 +306,27 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 	}
 
 	// Get drive info using the OpenAPI client
-	userInfo, apiErr := f.GetUserInfo(ctx)
+	driveInfo, apiErr := f.GetDriveID(ctx)
 	if apiErr != nil {
-		return nil, fmt.Errorf("failed to get user info: %v", apiErr)
+		return nil, fmt.Errorf("failed to get drive info: %v", apiErr)
 	}
-	// Set drive ID
-	f.driveID = userInfo.FileDriveID
+	f.driveID = driveInfo.DefaultDriveID
 
 	return f, nil
-}
-
-// rootSlash returns root with a slash on if it is empty, otherwise empty string
-func (f *Fs) rootSlash() string {
-	if f.root == "" {
-		return f.root
-	}
-	return f.root + "/"
 }
 
 // Return an Object from a path
 //
 // If it can't be found it returns the error fs.ErrorObjectNotFound.
 func (f *Fs) newObjectWithInfo(ctx context.Context, remote string, info *api.FileEntity) (fs.Object, error) {
-	o := &Object{
-		fs:       f,
-		remote:   remote,
-		id:       info.FileID,
-		parentID: info.ParentFileID,
-	}
 	var err error
+	o := &Object{
+		fs:     f,
+		remote: remote,
+	}
 	if info != nil {
-		// Set info
+		o.id = info.FileID
+		o.parentID = info.ParentFileID
 		err = o.setMetaData(info)
 	} else {
 		err = o.readMetaData(ctx) // reads info and meta, returning an error
@@ -612,7 +601,7 @@ func (f *Fs) Copy(ctx context.Context, src fs.Object, remote string) (fs.Object,
 		return nil, fmt.Errorf("error copying file: %v", apiErr)
 	}
 
-	info, apiErr := f.FileInfoById(ctx, f.driveID, item.FileID)
+	info, apiErr := f.FileInfoByID(ctx, f.driveID, item.FileID)
 	if apiErr != nil {
 		return nil, fmt.Errorf("error getting copied file: %v", apiErr)
 	}
@@ -647,7 +636,7 @@ func (f *Fs) move(ctx context.Context, id, directoryID string) (*api.FileEntity,
 	}
 
 	// Convert to FileEntity
-	fileEntity, apiErr := f.FileInfoById(ctx, f.driveID, result.FileID)
+	fileEntity, apiErr := f.FileInfoByID(ctx, f.driveID, result.FileID)
 	if apiErr != nil {
 		return nil, fmt.Errorf("error getting moved file: %v", apiErr)
 	}
@@ -657,15 +646,15 @@ func (f *Fs) move(ctx context.Context, id, directoryID string) (*api.FileEntity,
 
 // About gets quota information
 func (f *Fs) About(ctx context.Context) (*fs.Usage, error) {
-	about, apiErr := f.GetUserInfo(ctx)
+	spaceInfo, apiErr := f.GetSpaceInfo(ctx)
 	if apiErr != nil {
-		return nil, fmt.Errorf("error getting user info: %v", apiErr)
+		return nil, fmt.Errorf("error getting space info: %v", apiErr)
 	}
 
 	usage := &fs.Usage{
-		Used:  fs.NewUsageValue(int64(about.UsedSize)),
-		Total: fs.NewUsageValue(int64(about.TotalSize)),
-		Free:  fs.NewUsageValue(int64(about.TotalSize - about.UsedSize)),
+		Used:  fs.NewUsageValue(spaceInfo.PersonalSpaceInfo.UsedSize),
+		Total: fs.NewUsageValue(spaceInfo.PersonalSpaceInfo.TotalSize),
+		Free:  fs.NewUsageValue(spaceInfo.PersonalSpaceInfo.TotalSize - spaceInfo.PersonalSpaceInfo.UsedSize),
 	}
 
 	return usage, nil
@@ -760,14 +749,10 @@ func (f *Fs) UserInfo(ctx context.Context) (map[string]string, error) {
 		"UserName": user.UserName,
 		"Email":    user.Email,
 		"Phone":    user.Phone,
-		"Role":     string(user.Role),
-		"Status":   string(user.Status),
+		"Role":     user.Role,
+		"Status":   user.Status,
 		"Nickname": user.Nickname,
 	}
-
-	userInfo["Expire"] = user.ThirdPartyVipExpire
-	userInfo["ThirdPartyVip"] = strconv.FormatBool(user.ThirdPartyVip)
-	userInfo["ThirdPartyVipExpire"] = user.ThirdPartyVipExpire
 
 	return userInfo, nil
 }
@@ -946,16 +931,13 @@ func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, op
 		defer o.fs.tokenRenewer.Stop()
 	}
 
-	size := src.Size()
-	remote := o.Remote()
-
 	// Create the directory for the object if it doesn't exist
-	leaf, directoryID, err := o.fs.dirCache.FindPath(ctx, remote, true)
+	leaf, directoryID, err := o.fs.dirCache.FindPath(ctx, o.Remote(), true)
 	if err != nil {
 		return err
 	}
 
-	return o.upload(ctx, in, leaf, directoryID, size)
+	return o.upload(ctx, in, leaf, directoryID, src.Size())
 }
 
 // Remove an object

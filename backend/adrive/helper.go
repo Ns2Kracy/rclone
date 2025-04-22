@@ -20,11 +20,49 @@ func (f *Fs) GetUserInfo(ctx context.Context) (*api.UserInfo, error) {
 	err := f.pacer.Call(func() (bool, error) {
 		resp2, err := f.srv.CallJSON(ctx, &opts, nil, &resp)
 		return shouldRetry(ctx, resp2, err)
-	})	
+	})
 	if err != nil {
 		return nil, err
 	}
 	result = resp.UserInfo
+	return &result, nil
+}
+
+// GetSpaceInfo gets information about the authenticated user's space
+func (f *Fs) GetSpaceInfo(ctx context.Context) (*api.SpaceInfo, error) {
+	opts := rest.Opts{
+		Method: "POST",
+		Path:   "/adrive/v1.0/user/getSpaceInfo",
+	}
+	var resp api.SpaceInfo
+	err := f.pacer.Call(func() (bool, error) {
+		resp2, err := f.srv.CallJSON(ctx, &opts, nil, &resp)
+		return shouldRetry(ctx, resp2, err)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetDriveID gets information about the authenticated user
+func (f *Fs) GetDriveID(ctx context.Context) (*api.DriveInfo, error) {
+	var result api.DriveInfo
+	opts := rest.Opts{
+		Method: "POST",
+		Path:   "/adrive/v1.0/user/getDriveInfo",
+	}
+	var resp struct {
+		api.DriveInfo
+	}
+	err := f.pacer.Call(func() (bool, error) {
+		resp2, err := f.srv.CallJSON(ctx, &opts, nil, &resp)
+		return shouldRetry(ctx, resp2, err)
+	})
+	if err != nil {
+		return nil, err
+	}
+	result = resp.DriveInfo
 	return &result, nil
 }
 
@@ -98,8 +136,8 @@ func (f *Fs) FileListGetAll(ctx context.Context, param *api.FileListParam, maxIt
 	return result, nil
 }
 
-// FileInfoById gets file information by ID
-func (f *Fs) FileInfoById(ctx context.Context, driveID, fileID string) (*api.FileEntity, error) {
+// FileInfoByID gets file information by ID
+func (f *Fs) FileInfoByID(ctx context.Context, driveID, fileID string) (*api.FileEntity, error) {
 	opts := rest.Opts{
 		Method: "POST",
 		Path:   "/adrive/v1.0/openFile/get",
@@ -211,8 +249,8 @@ func (f *Fs) FileUploadCreate(ctx context.Context, param *api.FileUploadCreatePa
 	return &resp, nil
 }
 
-// GetFileDownloadUrl gets the download URL for a file
-func (f *Fs) FileUploadGetUploadUrl(ctx context.Context, param *api.FileUploadGetUploadURLParam) (*api.FileUploadGetUploadURLResponse, error) {
+// FileUploadGetUploadURL gets the download URL for a file
+func (f *Fs) FileUploadGetUploadURL(ctx context.Context, param *api.FileUploadGetUploadURLParam) (*api.FileUploadGetUploadURLResponse, error) {
 	opts := rest.Opts{
 		Method: "POST",
 		Path:   "/adrive/v1.0/openFile/getUploadUrl",
@@ -228,8 +266,8 @@ func (f *Fs) FileUploadGetUploadUrl(ctx context.Context, param *api.FileUploadGe
 	return &resp, nil
 }
 
-// GetFileDownloadUrl gets the download URL for a file
-func (f *Fs) FileUploadComplete(ctx context.Context, param *api.FileUploadCompleteParam) (*api.FileUploadCompleteResponse, error) {
+// FileUploadComplete gets the download URL for a file
+func (f *Fs) FileUploadComplete(ctx context.Context, param *api.FileUploadCompleteParam) (*api.FileEntity, error) {
 	opts := rest.Opts{
 		Method: "POST",
 		Path:   "/adrive/v1.0/openFile/complete",
@@ -242,5 +280,11 @@ func (f *Fs) FileUploadComplete(ctx context.Context, param *api.FileUploadComple
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+
+	file, err := f.FileInfoByID(ctx, param.DriveID, param.FileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
